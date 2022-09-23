@@ -19,17 +19,17 @@ DB_USERNAME=root
 DB_PASSWORD=
 
 #ejecutar las migraciones de nuestro proyecto en la base de datos
-php artisan migrate
+    php artisan migrate
 
 # 1. Poder registrar usuarios
 # 2. Autenticar con un login
 # 3. Listar una serie de productos, dos opciones: 1. Ruta de forma publica, 2. Rutas que necesites estar autenticado en el sistema para poder ver en esos productos
 
 #Crear modelo parametros: "m" crea la migracionc "c" creé controlador "r" para que cree la estructura de resorce en laravel
-php artisan make:model Product -mcr
+    php artisan make:model Product -mcr
 
 #crear otro controlador (Controlador para Control del login y registro de usuarios)
-php artisan make:controller AuthController
+    php artisan make:controller AuthController
 
 #Actualizamos la migracion de la tabla productos 2022_09_23_031124_create_produts_table.php
 public function up()
@@ -44,10 +44,10 @@ public function up()
     }
 
 #Ejecutamos de nuevo las migraciones (Solo se actualizara la tabla products)
-php artisan migrate
+    php artisan migrate
 
 #Generar unos seeder para rellenar la tabla productos de forma espesifica "path: app/database/seeders" <- ver seeders
-php artisan make:seeder ProductSeeder
+    php artisan make:seeder ProductSeeder
 
 # Creamos una insercion
     public function run()
@@ -73,4 +73,110 @@ php artisan make:seeder ProductSeeder
         
     }
 
-#Insertar los productos de nuestro seeder
+#Vamos al archivo DatabaseSeeder.php y dentro del metodo run() agregamos  "path: app/database/seeders/DatabaseSeeder.php" <- ver seeders
+    $this->call([
+        ProductSeeder::class,
+    ]);
+
+#Insertar los productos de nuestro seeder con el siguiente comando
+    php artisan db:seed
+
+#Vamos a crear una nueva ruta para nuestra API en nuestro archivo api.php "path: app/routes/api.php" <-> La carpeta es para las rutas, cuenta con 4 archivos.
+    Route::get('products', [ProductController::class, 'index']);
+
+#vamos al controlador ProductController del metodo index() agregamos "path: app/Http/Controllers/ProductController"
+    $product = Product::all();
+    return $product;
+
+#Ejecutamos en la consola
+    php artisan server
+
+#vamos a nuestro cliente de PostMan y creamos nuestra primera request para este servicio, el metodo GET, nos devuelve los productos sin que estar autenticados. 
+    http://127.0.0.1:8000/api/products/
+
+[
+  {
+    "id": 1,
+    "name": "Iphone 13",
+    "description": "Mobile phone Apple",
+    "amount": 980,
+    "created_at": null,
+    "updated_at": null
+  },
+  {
+    "id": 2,
+    "name": "Ipad Pro 11",
+    "description": "Tablet Apple",
+    "amount": 850,
+    "created_at": null,
+    "updated_at": null
+  },
+  {
+    "id": 3,
+    "name": "Playstatrion 5",
+    "description": "Mobile phone Apple",
+    "amount": 540,
+    "created_at": null,
+    "updated_at": null
+  }
+]
+
+#Nos vamos a AuthController y agregamos las siguientes clases
+    use Illuminate\Support\Facades\Auth;
+    use Validator;
+    use App\Models\User;
+    use \stdClass;
+    
+    public function register(Request $request)
+    {
+        
+        $validator = Validator::make($request->all(), [
+            'name' => 'required|string|max:255',
+            'email' => 'required|string|email|max:255|unique:users',
+            'password' => 'required|string|max:8'
+        ]);
+        
+        if($validator->fails()){
+            return response()->json($validator->errors());
+        }
+
+        $user = User::create([
+            'name' => $request->name,
+            'email' => $request->email,
+            'password' => Hash::make($request->password)
+        ]);
+
+        $token = $user->createToken('auth_token')->plainTextToken;
+
+        return response()
+                ->json( [ 'data'=>$user,'access_token' => $token, 'token_type' => 'Bearer' ] );
+
+    }
+
+#Creamos la sigueinte ruta tipo POST
+    Route::post('register', [AuthController::class, 'register']);
+
+#nos vamos a la ruta 
+    http://127.0.0.1:8000/api/register/  
+
+#enviamos por el Body por form-data
+name        Esneider
+email       example@example.com
+password    12345678
+
+#Por el Headers enviamos
+Accept          application/json
+Content-Type    application/json
+
+#Lo que nos devuelve
+{
+    "data": {
+        "name": "Esneider",
+        "email": "example@example.com",
+        "updated_at": "2022-09-23T16:18:26.000000Z",
+        "created_at": "2022-09-23T16:18:26.000000Z",
+        "id": 1
+    },
+    "access_token": "1|QTc6LVMruOtW3CxgstexpWQQ8WtO3HyMntjMsyd5",
+    "token_type": "Bearer"
+}
