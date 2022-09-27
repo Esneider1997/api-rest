@@ -12,6 +12,7 @@ use \stdClass;
 //use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Hash;
+use Symfony\Contracts\Service\Attribute\Required;
 
 class AuthController extends Controller
 {
@@ -46,4 +47,15 @@ class AuthController extends Controller
                     ->json( [ 'data'=>$user,'access_token' => $token, 'token_type' => 'Bearer' ] );
 
     }
+
+    public function login(Required $request)
+    {
+        if(!Auth::attempt($request->only('email', 'password'))){
+            
+        }
+    }
+
+
+
+
 }
